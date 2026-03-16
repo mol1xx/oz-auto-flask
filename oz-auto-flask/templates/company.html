@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ company['name'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<header class="header">
+    <div class="container header-inner">
+        <div>
+            <div class="brand">АвтоКаталог OZ</div>
+            <div class="subtitle">Карточка компании</div>
+        </div>
+        <a href="{{ url_for('index') }}">← Назад в каталог</a>
+    </div>
+</header>
+
+<main class="container">
+    <section class="company-page">
+        <h1>{{ company['name'] }}</h1>
+
+        <div class="card-badges" style="margin-bottom: 16px;">
+            <span class="badge">{{ company['category'] or 'Без категории' }}</span>
+            {% if company['subcategory'] %}
+                <span class="badge badge-soft">{{ company['subcategory'] }}</span>
+            {% endif %}
+        </div>
+
+        <div class="company-grid">
+            <div class="company-box">
+                <h3>Основная информация</h3>
+
+                <p>
+                    {{ company['description'] or 'Описание пока не заполнено.' }}
+                </p>
+
+                <p><strong>Адрес:</strong> {{ company['address'] or 'Не указан' }}</p>
+                <p><strong>Район:</strong> {{ company['district'] or 'Не указан' }}</p>
+
+                <p>
+                    <strong>Телефон:</strong>
+                    {% if company['phone'] %}
+                        <a href="tel:{{ company['phone'] }}">{{ company['phone'] }}</a>
+                    {% else %}
+                        Не указан
+                    {% endif %}
+                </p>
+
+                <p><strong>Рейтинг:</strong> ★ {{ company['rating'] or 0 }}</p>
+                <p><strong>Отзывы:</strong> {{ company['reviews_count'] or 0 }}</p>
+                <p><strong>Статус:</strong> {{ 'Активная запись' if company['is_active'] else 'Неактивная запись' }}</p>
+            </div>
+
+            <div class="company-box">
+                <h3>Ссылки и источник</h3>
+
+                <p>
+                    <strong>Сайт:</strong>
+                    {% if company['website'] %}
+                        <a href="{{ company['website'] }}" target="_blank" rel="noopener">
+                            {{ company['website'] }}
+                        </a>
+                    {% else %}
+                        Не указан
+                    {% endif %}
+                </p>
+
+                <p>
+                    <strong>Источник:</strong>
+                    {% if company['source_url'] %}
+                        <a href="{{ company['source_url'] }}" target="_blank" rel="noopener">
+                            Открыть источник
+                        </a>
+                    {% else %}
+                        Не указан
+                    {% endif %}
+                </p>
+
+                <p>
+                    <strong>Тип источника:</strong>
+                    {{ company['source_type'] or 'Не указан' }}
+                </p>
+            </div>
+        </div>
+    </section>
+</main>
+</body>
+</html>
