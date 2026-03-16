@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>АвтоКаталог OZ</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+<div class="diagnostic-overlay" id="diagnosticOverlay">
+    <div class="diagnostic-modal">
+        <button class="diagnostic-close" id="diagnosticClose" type="button">×</button>
+        <div class="diagnostic-kicker">Быстрый подбор</div>
+        <h2>Что случилось с машиной?</h2>
+        <p>
+            Опиши проблему своими словами, и сайт попробует определить вероятную причину
+            и подобрать подходящий сервис.
+        </p>
+
+        <form method="post" action="{{ url_for('diagnosis_start') }}" class="diagnostic-form">
+            <input
+                type="text"
+                name="user_text"
+                placeholder="Например: гуляет руль, не заводится, стук в подвеске"
+                required
+            >
+            <button type="submit">Начать диагностику</button>
+        </form>
+
+        <div class="popular-symptoms">
+            <div class="popular-title">Популярные симптомы:</div>
+            <div class="popular-list">
+                {% for symptom in popular_symptoms %}
+                    <form method="post" action="{{ url_for('diagnosis_start') }}">
+                        <input type="hidden" name="user_text" value="{{ symptom['title'] }}">
+                        <button type="submit" class="symptom-chip">{{ symptom['title'] }}</button>
+                    </form>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<header class="header">
+    <div class="container header-inner">
+        <div>
+            <div class="brand">АвтоКаталог OZ</div>
+            <div class="subtitle">Автосервисы, шиномонтаж, автоэлектрика, детейлинг и запчасти</div>
+        </div>
+        <div class="header-actions">
+            <a class="btn-secondary" href="{{ url_for('diagnosis_reset') }}">Сбросить диагностику</a>
+            <a href="{{ url_for('index') }}">Каталог</a>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div class="hero-box">
+            <div>
+                <h1>Каталог автосервисов Орехово-Зуево</h1>
+                <p>
+                    Ищи сервисы по категории, району и описанию.
+                    Или начни с диагностики: опиши проблему, ответь на несколько вопросов
+                    и получи подходящие категории сервисов.
+                </p>
+
+                <div class="hero-buttons">
+                    <button type="button" id="openDiagnosticBtn">Начать диагностику</button>
+                </div>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat">
+                    <strong>{{ total_count }}</strong>
+                    <span>компаний в базе</span>
+                </div>
+                <div class="stat">
+                    <strong>{{ filtered_count }}</strong>
+                    <span>найдено по фильтрам</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="filters-box">
+        <form method="get" action="{{ url_for('index') }}" class="filters-form">
+            <input
+                type="text"
+                name="q"
+                placeholder="Поиск по названию, адресу, описанию"
+                value="{{ filters.q }}"
+            >
+
+            <select name="category">
+                <option value="">Все категории</option>
+                {% for item in categories %}
+                    <option value="{{ item }}" {% if filters.category == item %}selected{% endif %}>
+                        {{ item }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="district">
+                <option value="">Все районы</option>
+                {% for item in districts %}
+                    <option value="{{ item }}" {% if filters.district == item %}selected{% endif %}>
+                        {{ item }}
+                    </option>
+                {% endfor %}
+            </select>
+
+            <select name="sort">
+                <option value="rating_desc" {% if filters.sort == "rating_desc" %}selected{% endif %}>
+                    Сначала по рейтингу
+                </option>
+                <option value="reviews_desc" {% if filters.sort == "reviews_desc" %}selected{% endif %}>
+                    Сначала по отзывам
+                </option>
+                <option value="name_asc" {% if filters.sort == "name_asc" %}selected{% endif %}>
+                    По названию А-Я
+                </option>
+            </select>
+
+            <label>
+                <input type="checkbox" name="has_phone" value="1" {% if filters.has_phone %}checked{% endif %}>
+                Только с телефоном
+            </label>
+
+            <label>
+                <input type="checkbox" name="has_site" value="1" {% if filters.has_site %}checked{% endif %}>
+                Только с сайтом
+            </label>
+
+            <label>
+                <input type="checkbox" name="only_active" value="1" {% if filters.only_active %}checked{% endif %}>
+                Только активные
+            </label>
+
+            <div class="actions">
+                <button type="submit">Применить</button>
+                <a class="btn-secondary" href="{{ url_for('index') }}">Сбросить</a>
+            </div>
+        </form>
+    </section>
+
+    <section class="section-head">
+        <h2>Компании</h2>
+        <div>Найдено: {{ filtered_count }} из {{ total_count }}</div>
+    </section>
+
+    <section class="cards">
+        {% if companies %}
+            {% for company in companies %}
+                <article class="card">
+                    <div class="card-top">
+                        <div class="card-title-block">
+                            <h3>
+                                <a href="{{ url_for('company_page', slug=company['slug']) }}">
+                                    {{ company['name'] }}
+                                </a>
+                            </h3>
+
+                            <div class="card-badges">
+                                <span class="badge">
+                                    {{ company['category'] or 'Без категории' }}
+                                </span>
+
+                                {% if company['subcategory'] %}
+                                    <span class="badge badge-soft">
+                                        {{ company['subcategory'] }}
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <div class="rating-box">
+                            <div class="rating-value">★ {{ company['rating'] or 0 }}</div>
+                            <div class="rating-count">{{ company['reviews_count'] or 0 }} отзывов</div>
+                        </div>
+                    </div>
+
+                    <p class="card-description">
+                        {{ company['description'] or 'Описание пока не заполнено.' }}
+                    </p>
+
+                    <div class="meta-list">
+                        <div class="meta">
+                            <strong>Адрес:</strong>
+                            {{ company['address'] or 'Не указан' }}
+                        </div>
+
+                        <div class="meta">
+                            <strong>Район:</strong>
+                            {{ company['district'] or 'Не указан' }}
+                        </div>
+
+                        <div class="meta">
+                            <strong>Телефон:</strong>
+                            {% if company['phone'] %}
+                                <a href="tel:{{ company['phone'] }}">{{ company['phone'] }}</a>
+                            {% else %}
+                                Не указан
+                            {% endif %}
+                        </div>
+
+                        <div class="meta">
+                            <strong>Сайт:</strong>
+                            {% if company['website'] %}
+                                <a href="{{ company['website'] }}" target="_blank" rel="noopener">Перейти</a>
+                            {% else %}
+                                Не указан
+                            {% endif %}
+                        </div>
+
+                        <div class="meta">
+                            <strong>Статус:</strong>
+                            {{ 'Активная запись' if company['is_active'] else 'Неактивная запись' }}
+                        </div>
+                    </div>
+
+                    <div class="card-actions">
+                        <a class="btn-secondary" href="{{ url_for('company_page', slug=company['slug']) }}">
+                            Подробнее
+                        </a>
+
+                        {% if company['phone'] %}
+                            <a class="btn-call" href="tel:{{ company['phone'] }}">
+                                Позвонить
+                            </a>
+                        {% endif %}
+                    </div>
+                </article>
+            {% endfor %}
+        {% else %}
+            <div class="empty">
+                Ничего не найдено. Либо база пустая, либо фильтры слишком жёсткие.
+            </div>
+        {% endif %}
+    </section>
+</main>
+
+<script>
+    const overlay = document.getElementById("diagnosticOverlay");
+    const closeBtn = document.getElementById("diagnosticClose");
+    const openBtn = document.getElementById("openDiagnosticBtn");
+
+    const modalClosed = sessionStorage.getItem("diagnostic_closed");
+
+    if (modalClosed === "1") {
+        overlay.style.display = "none";
+    }
+
+    closeBtn.addEventListener("click", () => {
+        overlay.style.display = "none";
+        sessionStorage.setItem("diagnostic_closed", "1");
+    });
+
+    openBtn.addEventListener("click", () => {
+        overlay.style.display = "flex";
+        sessionStorage.removeItem("diagnostic_closed");
+    });
+</script>
+</body>
+</html>
