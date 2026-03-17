@@ -5,7 +5,6 @@ from flask import Flask, render_template, request, abort, redirect, url_for, ses
 from diagnostic_engine import (
     load_symptoms,
     find_best_symptom,
-    find_question,
     evaluate_symptom,
     urgency_label,
 )
@@ -26,8 +25,10 @@ def get_connection():
 def build_filters():
     return {
         "q": request.args.get("q", "").strip(),
-        "category": request.args.get("category", "").strip(),
+        "city": request.args.get("city", "").strip(),
         "district": request.args.get("district", "").strip(),
+        "metro": request.args.get("metro", "").strip(),
+        "category": request.args.get("category", "").strip(),
         "sort": request.args.get("sort", "rating_desc").strip(),
         "has_phone": request.args.get("has_phone") == "1",
         "has_site": request.args.get("has_site") == "1",
@@ -35,7 +36,56 @@ def build_filters():
     }
 
 
-def get_companies(filters=None, recommended_categories=None):
+def get_filter_options(selected_city_slug=None):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cities = cur.execute("""
+        SELECT DISTINCT city_slug, city_name
+        FROM company
+        WHERE city_slug IS NOT NULL AND TRIM(city_slug) != ''
+        ORDER BY city_name
+    """).fetchall()
+
+    districts_sql = """
+        SELECT DISTINCT district
+        FROM company
+        WHERE district IS NOT NULL AND TRIM(district) != ''
+    """
+    districts_params = []
+
+    metro_sql = """
+        SELECT DISTINCT metro_station
+        FROM company
+        WHERE metro_station IS NOT NULL AND TRIM(metro_station) != ''
+    """
+    metro_params = []
+
+    if selected_city_slug:
+        districts_sql += " AND city_slug = ?"
+        metro_sql += " AND city_slug = ?"
+        districts_params.append(selected_city_slug)
+        metro_params.append(selected_city_slug)
+
+    districts_sql += " ORDER BY district"
+    metro_sql += " ORDER BY metro_station"
+
+    districts = cur.execute(districts_sql, districts_params).fetchall()
+    metro_stations = cur.execute(metro_sql, metro_params).fetchall()
+
+    categories = cur.execute("""
+        SELECT DISTINCT category
+        FROM company
+        WHERE category IS NOT NULL AND TRIM(category) != ''
+        ORDER BY category
+    """).fetchall()
+
+    conn.close()
+
+    return cities, districts, metro_stations, categories
+
+
+def get_companies(filters=None, recommended_categories=None, limit=None):
     conn = get_connection()
     cur = conn.cursor()
 
@@ -54,21 +104,31 @@ def get_companies(filters=None, recommended_categories=None):
                     name LIKE ?
                     OR category LIKE ?
                     OR subcategory LIKE ?
-                    OR address LIKE ?
+                    OR city_name LIKE ?
                     OR district LIKE ?
+                    OR metro_station LIKE ?
+                    OR address LIKE ?
                     OR description LIKE ?
                 )
             """
             like_value = f"%{filters['q']}%"
-            params.extend([like_value] * 6)
+            params.extend([like_value] * 8)
 
-        if filters["category"]:
-            sql += " AND category = ?"
-            params.append(filters["category"])
+        if filters["city"]:
+            sql += " AND city_slug = ?"
+            params.append(filters["city"])
 
         if filters["district"]:
             sql += " AND district = ?"
             params.append(filters["district"])
+
+        if filters["metro"]:
+            sql += " AND metro_station = ?"
+            params.append(filters["metro"])
+
+        if filters["category"]:
+            sql += " AND category = ?"
+            params.append(filters["category"])
 
         if filters["has_phone"]:
             sql += " AND phone IS NOT NULL AND TRIM(phone) != ''"
@@ -88,39 +148,24 @@ def get_companies(filters=None, recommended_categories=None):
     else:
         sql += " ORDER BY rating DESC, reviews_count DESC"
 
+    if limit:
+        sql += f" LIMIT {int(limit)}"
+
     companies = cur.execute(sql, params).fetchall()
-
-    categories = [
-        row["category"]
-        for row in cur.execute("""
-            SELECT DISTINCT category
-            FROM company
-            WHERE category IS NOT NULL AND TRIM(category) != ''
-            ORDER BY category
-        """).fetchall()
-    ]
-
-    districts = [
-        row["district"]
-        for row in cur.execute("""
-            SELECT DISTINCT district
-            FROM company
-            WHERE district IS NOT NULL AND TRIM(district) != ''
-            ORDER BY district
-        """).fetchall()
-    ]
-
     total_count = cur.execute("SELECT COUNT(*) FROM company").fetchone()[0]
 
     conn.close()
-
-    return companies, categories, districts, total_count
+    return companies, total_count
 
 
 @app.route("/")
 def index():
     filters = build_filters()
-    companies, categories, districts, total_count = get_companies(filters=filters)
+    companies, total_count = get_companies(filters=filters)
+
+    cities, districts, metro_stations, categories = get_filter_options(
+        selected_city_slug=filters["city"] or None
+    )
 
     symptoms = load_symptoms()
     popular_symptoms = symptoms[:6]
@@ -130,9 +175,11 @@ def index():
         companies=companies,
         total_count=total_count,
         filtered_count=len(companies),
-        categories=categories,
-        districts=districts,
         filters=filters,
+        cities=cities,
+        districts=districts,
+        metro_stations=metro_stations,
+        categories=categories,
         popular_symptoms=popular_symptoms,
     )
 
@@ -237,9 +284,10 @@ def diagnosis_result():
     matched_companies = []
 
     if result["recommended_categories"]:
-        matched_companies, _, _, _ = get_companies(
+        matched_companies, _ = get_companies(
             filters=None,
-            recommended_categories=result["recommended_categories"]
+            recommended_categories=result["recommended_categories"],
+            limit=12
         )
 
     return render_template(
@@ -247,7 +295,7 @@ def diagnosis_result():
         diagnosis_mode="result",
         symptom=symptom,
         result=result,
-        matched_companies=matched_companies[:12],
+        matched_companies=matched_companies,
         urgency_label_text=urgency_label(result["urgency"]),
         diagnosis_failed=False
     )
