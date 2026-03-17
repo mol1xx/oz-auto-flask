@@ -3,199 +3,228 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>АвтоКаталог OZ</title>
+    <title>АвтоКаталог</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-<div class="diagnostic-overlay" id="diagnosticOverlay">
-    <div class="diagnostic-modal">
-        <button class="diagnostic-close" id="diagnosticClose" type="button">×</button>
-        <div class="diagnostic-kicker">Быстрый подбор</div>
-        <h2>Что случилось с машиной?</h2>
-        <p>
-            Опиши проблему своими словами, и сайт попробует определить вероятную причину
-            и подобрать подходящий сервис.
-        </p>
 
-        <form method="post" action="{{ url_for('diagnosis_start') }}" class="diagnostic-form">
-            <input
-                type="text"
-                name="user_text"
-                placeholder="Например: гуляет руль, не заводится, стук в подвеске"
-                required
-            >
-            <button type="submit">Начать диагностику</button>
-        </form>
+<div class="assistant-widget">
+    <button class="assistant-fab" id="assistantFab" type="button" aria-label="Открыть помощника">
+        💬
+    </button>
 
-        <div class="popular-symptoms">
-            <div class="popular-title">Популярные симптомы:</div>
-            <div class="popular-list">
-                {% for symptom in popular_symptoms %}
-                    <form method="post" action="{{ url_for('diagnosis_start') }}">
-                        <input type="hidden" name="user_text" value="{{ symptom['title'] }}">
-                        <button type="submit" class="symptom-chip">{{ symptom['title'] }}</button>
-                    </form>
-                {% endfor %}
+    <div class="assistant-panel" id="assistantPanel">
+        <div class="assistant-header">
+            <div>
+                <div class="assistant-title">Помощник по поломкам</div>
+                <div class="assistant-subtitle">Подберём вероятную причину и сервис</div>
+            </div>
+            <button class="assistant-close" id="assistantClose" type="button">×</button>
+        </div>
+
+        <div class="assistant-body">
+            <div class="assistant-message">
+                Привет. Опиши, что случилось с машиной, и я попробую сузить проблему.
+            </div>
+
+            <form method="post" action="{{ url_for('diagnosis_start') }}" class="assistant-form">
+                <input
+                    type="text"
+                    name="user_text"
+                    placeholder="Например: гуляет руль, не заводится..."
+                    required
+                >
+                <button type="submit">Подобрать</button>
+            </form>
+
+            <div class="assistant-quick">
+                <div class="assistant-quick-title">Быстрые варианты</div>
+                <div class="assistant-chip-list">
+                    {% for symptom in popular_symptoms %}
+                        <form method="post" action="{{ url_for('diagnosis_start') }}">
+                            <input type="hidden" name="user_text" value="{{ symptom['title'] }}">
+                            <button type="submit" class="chip">{{ symptom['title'] }}</button>
+                        </form>
+                    {% endfor %}
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<header class="header">
+<header class="site-header">
     <div class="container header-inner">
-        <div>
-            <div class="brand">АвтоКаталог OZ</div>
-            <div class="subtitle">Автосервисы, шиномонтаж, автоэлектрика, детейлинг и запчасти</div>
+        <div class="brand-wrap">
+            <div class="brand-mark">A</div>
+            <div>
+                <div class="brand-title">AutoFinder</div>
+                <div class="brand-subtitle">Каталог автосервисов и подбор по симптомам</div>
+            </div>
         </div>
-        <div class="header-actions">
-            <a class="btn-secondary" href="{{ url_for('diagnosis_reset') }}">Сбросить диагностику</a>
-            <a href="{{ url_for('index') }}">Каталог</a>
+
+        <div class="header-links">
+            <a class="ghost-btn" href="{{ url_for('diagnosis_reset') }}">Сбросить диагностику</a>
+            <a class="text-link" href="{{ url_for('index') }}">Каталог</a>
         </div>
     </div>
 </header>
 
 <main class="container">
     <section class="hero">
-        <div class="hero-box">
-            <div>
-                <h1>Каталог автосервисов Орехово-Зуево</h1>
+        <div class="hero-grid">
+            <div class="hero-main card-surface">
+                <div class="eyebrow">Каталог + диагностика</div>
+                <h1>Подбор автосервиса по проблеме, городу и локации</h1>
                 <p>
-                    Ищи сервисы по категории, району и описанию.
-                    Или начни с диагностики: опиши проблему, ответь на несколько вопросов
-                    и получи подходящие категории сервисов.
+                    Сейчас проект работает как каталог и диагностический помощник.
+                    Структура уже готова под расширение по городам, районам и метро.
                 </p>
 
-                <div class="hero-buttons">
-                    <button type="button" id="openDiagnosticBtn">Начать диагностику</button>
+                <div class="hero-actions">
+                    <button type="button" id="openAssistantBtn">Открыть помощника</button>
                 </div>
             </div>
 
             <div class="hero-stats">
-                <div class="stat">
-                    <strong>{{ total_count }}</strong>
-                    <span>компаний в базе</span>
+                <div class="stat-card card-surface">
+                    <div class="stat-value">{{ total_count }}</div>
+                    <div class="stat-label">компаний в базе</div>
                 </div>
-                <div class="stat">
-                    <strong>{{ filtered_count }}</strong>
-                    <span>найдено по фильтрам</span>
+                <div class="stat-card card-surface">
+                    <div class="stat-value">{{ filtered_count }}</div>
+                    <div class="stat-label">найдено по фильтрам</div>
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="filters-box">
+    <section class="filters card-surface">
         <form method="get" action="{{ url_for('index') }}" class="filters-form">
-            <input
-                type="text"
-                name="q"
-                placeholder="Поиск по названию, адресу, описанию"
-                value="{{ filters.q }}"
-            >
+            <div class="field field-wide">
+                <label>Поиск</label>
+                <input
+                    type="text"
+                    name="q"
+                    placeholder="Название, услуга, район, описание"
+                    value="{{ filters.q }}"
+                >
+            </div>
 
-            <select name="category">
-                <option value="">Все категории</option>
-                {% for item in categories %}
-                    <option value="{{ item }}" {% if filters.category == item %}selected{% endif %}>
-                        {{ item }}
-                    </option>
-                {% endfor %}
-            </select>
+            <div class="field">
+                <label>Город</label>
+                <select name="city" id="citySelect">
+                    <option value="">Все города</option>
+                    {% for city in cities %}
+                        <option value="{{ city['city_slug'] }}" {% if filters.city == city['city_slug'] %}selected{% endif %}>
+                            {{ city['city_name'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            <select name="district">
-                <option value="">Все районы</option>
-                {% for item in districts %}
-                    <option value="{{ item }}" {% if filters.district == item %}selected{% endif %}>
-                        {{ item }}
-                    </option>
-                {% endfor %}
-            </select>
+            <div class="field">
+                <label>Метро</label>
+                <select name="metro" id="metroSelect">
+                    <option value="">Любое метро</option>
+                    {% for metro in metro_stations %}
+                        <option value="{{ metro['metro_station'] }}" {% if filters.metro == metro['metro_station'] %}selected{% endif %}>
+                            {{ metro['metro_station'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            <select name="sort">
-                <option value="rating_desc" {% if filters.sort == "rating_desc" %}selected{% endif %}>
-                    Сначала по рейтингу
-                </option>
-                <option value="reviews_desc" {% if filters.sort == "reviews_desc" %}selected{% endif %}>
-                    Сначала по отзывам
-                </option>
-                <option value="name_asc" {% if filters.sort == "name_asc" %}selected{% endif %}>
-                    По названию А-Я
-                </option>
-            </select>
+            <div class="field">
+                <label>Район</label>
+                <select name="district">
+                    <option value="">Все районы</option>
+                    {% for item in districts %}
+                        <option value="{{ item['district'] }}" {% if filters.district == item['district'] %}selected{% endif %}>
+                            {{ item['district'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            <label>
-                <input type="checkbox" name="has_phone" value="1" {% if filters.has_phone %}checked{% endif %}>
-                Только с телефоном
-            </label>
+            <div class="field">
+                <label>Категория</label>
+                <select name="category">
+                    <option value="">Все категории</option>
+                    {% for item in categories %}
+                        <option value="{{ item['category'] }}" {% if filters.category == item['category'] %}selected{% endif %}>
+                            {{ item['category'] }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-            <label>
-                <input type="checkbox" name="has_site" value="1" {% if filters.has_site %}checked{% endif %}>
-                Только с сайтом
-            </label>
+            <div class="field">
+                <label>Сортировка</label>
+                <select name="sort">
+                    <option value="rating_desc" {% if filters.sort == "rating_desc" %}selected{% endif %}>По рейтингу</option>
+                    <option value="reviews_desc" {% if filters.sort == "reviews_desc" %}selected{% endif %}>По отзывам</option>
+                    <option value="name_asc" {% if filters.sort == "name_asc" %}selected{% endif %}>По названию А-Я</option>
+                </select>
+            </div>
 
-            <label>
-                <input type="checkbox" name="only_active" value="1" {% if filters.only_active %}checked{% endif %}>
-                Только активные
-            </label>
+            <div class="checks">
+                <label><input type="checkbox" name="has_phone" value="1" {% if filters.has_phone %}checked{% endif %}> Только с телефоном</label>
+                <label><input type="checkbox" name="has_site" value="1" {% if filters.has_site %}checked{% endif %}> Только с сайтом</label>
+                <label><input type="checkbox" name="only_active" value="1" {% if filters.only_active %}checked{% endif %}> Только активные</label>
+            </div>
 
-            <div class="actions">
+            <div class="actions-row">
                 <button type="submit">Применить</button>
-                <a class="btn-secondary" href="{{ url_for('index') }}">Сбросить</a>
+                <a class="ghost-btn" href="{{ url_for('index') }}">Сбросить</a>
             </div>
         </form>
     </section>
 
     <section class="section-head">
-        <h2>Компании</h2>
-        <div>Найдено: {{ filtered_count }} из {{ total_count }}</div>
+        <div>
+            <div class="eyebrow">Каталог</div>
+            <h2>Найдено {{ filtered_count }} из {{ total_count }}</h2>
+        </div>
     </section>
 
-    <section class="cards">
+    <section class="cards-grid">
         {% if companies %}
             {% for company in companies %}
-                <article class="card">
-                    <div class="card-top">
-                        <div class="card-title-block">
+                <article class="company-card card-surface">
+                    <div class="company-head">
+                        <div>
                             <h3>
                                 <a href="{{ url_for('company_page', slug=company['slug']) }}">
                                     {{ company['name'] }}
                                 </a>
                             </h3>
 
-                            <div class="card-badges">
-                                <span class="badge">
-                                    {{ company['category'] or 'Без категории' }}
-                                </span>
-
+                            <div class="badges">
+                                <span class="badge">{{ company['category'] or 'Без категории' }}</span>
                                 {% if company['subcategory'] %}
-                                    <span class="badge badge-soft">
-                                        {{ company['subcategory'] }}
-                                    </span>
+                                    <span class="badge badge-soft">{{ company['subcategory'] }}</span>
                                 {% endif %}
                             </div>
                         </div>
 
-                        <div class="rating-box">
-                            <div class="rating-value">★ {{ company['rating'] or 0 }}</div>
-                            <div class="rating-count">{{ company['reviews_count'] or 0 }} отзывов</div>
+                        <div class="rating-pill">
+                            <strong>★ {{ company['rating'] or 0 }}</strong>
+                            <span>{{ company['reviews_count'] or 0 }} отзывов</span>
                         </div>
                     </div>
 
-                    <p class="card-description">
+                    <p class="description">
                         {{ company['description'] or 'Описание пока не заполнено.' }}
                     </p>
 
                     <div class="meta-list">
-                        <div class="meta">
-                            <strong>Адрес:</strong>
-                            {{ company['address'] or 'Не указан' }}
-                        </div>
-
-                        <div class="meta">
-                            <strong>Район:</strong>
-                            {{ company['district'] or 'Не указан' }}
-                        </div>
-
-                        <div class="meta">
+                        <div><strong>Город:</strong> {{ company['city_name'] or 'Не указан' }}</div>
+                        {% if company['metro_station'] %}
+                            <div><strong>Метро:</strong> {{ company['metro_station'] }}</div>
+                        {% endif %}
+                        <div><strong>Район:</strong> {{ company['district'] or 'Не указан' }}</div>
+                        <div><strong>Адрес:</strong> {{ company['address'] or 'Не указан' }}</div>
+                        <div>
                             <strong>Телефон:</strong>
                             {% if company['phone'] %}
                                 <a href="tel:{{ company['phone'] }}">{{ company['phone'] }}</a>
@@ -203,63 +232,58 @@
                                 Не указан
                             {% endif %}
                         </div>
-
-                        <div class="meta">
-                            <strong>Сайт:</strong>
-                            {% if company['website'] %}
-                                <a href="{{ company['website'] }}" target="_blank" rel="noopener">Перейти</a>
-                            {% else %}
-                                Не указан
-                            {% endif %}
-                        </div>
-
-                        <div class="meta">
-                            <strong>Статус:</strong>
-                            {{ 'Активная запись' if company['is_active'] else 'Неактивная запись' }}
-                        </div>
                     </div>
 
-                    <div class="card-actions">
-                        <a class="btn-secondary" href="{{ url_for('company_page', slug=company['slug']) }}">
-                            Подробнее
-                        </a>
-
+                    <div class="card-footer">
+                        <a class="ghost-btn" href="{{ url_for('company_page', slug=company['slug']) }}">Подробнее</a>
                         {% if company['phone'] %}
-                            <a class="btn-call" href="tel:{{ company['phone'] }}">
-                                Позвонить
-                            </a>
+                            <a class="call-btn" href="tel:{{ company['phone'] }}">Позвонить</a>
                         {% endif %}
                     </div>
                 </article>
             {% endfor %}
         {% else %}
-            <div class="empty">
-                Ничего не найдено. Либо база пустая, либо фильтры слишком жёсткие.
+            <div class="empty card-surface">
+                Ничего не найдено. У тебя либо слишком жёсткие фильтры, либо база ещё не наполнена.
             </div>
         {% endif %}
     </section>
 </main>
 
 <script>
-    const overlay = document.getElementById("diagnosticOverlay");
-    const closeBtn = document.getElementById("diagnosticClose");
-    const openBtn = document.getElementById("openDiagnosticBtn");
+    const assistantFab = document.getElementById("assistantFab");
+    const assistantPanel = document.getElementById("assistantPanel");
+    const assistantClose = document.getElementById("assistantClose");
+    const openAssistantBtn = document.getElementById("openAssistantBtn");
 
-    const modalClosed = sessionStorage.getItem("diagnostic_closed");
-
-    if (modalClosed === "1") {
-        overlay.style.display = "none";
+    function openAssistant() {
+        assistantPanel.classList.add("assistant-panel-open");
     }
 
-    closeBtn.addEventListener("click", () => {
-        overlay.style.display = "none";
-        sessionStorage.setItem("diagnostic_closed", "1");
+    function closeAssistant() {
+        assistantPanel.classList.remove("assistant-panel-open");
+    }
+
+    assistantFab.addEventListener("click", openAssistant);
+    assistantClose.addEventListener("click", closeAssistant);
+    openAssistantBtn.addEventListener("click", openAssistant);
+
+    const citySelect = document.getElementById("citySelect");
+    const metroSelect = document.getElementById("metroSelect");
+
+    function syncMetroState() {
+        const hasMetroOptions = metroSelect.options.length > 1;
+        metroSelect.disabled = !hasMetroOptions;
+        if (!hasMetroOptions) {
+            metroSelect.value = "";
+        }
+    }
+
+    citySelect.addEventListener("change", () => {
+        metroSelect.value = "";
     });
 
-    openBtn.addEventListener("click", () => {
-        overlay.style.display = "flex";
-        sessionStorage.removeItem("diagnostic_closed");
-    });
+    syncMetroState();
 </script>
 </body>
 </html>

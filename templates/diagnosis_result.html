@@ -7,42 +7,42 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-<header class="header">
+<header class="site-header">
     <div class="container header-inner">
-        <div>
-            <div class="brand">АвтоКаталог OZ</div>
-            <div class="subtitle">Диагностика симптомов</div>
+        <div class="brand-wrap">
+            <div class="brand-mark">A</div>
+            <div>
+                <div class="brand-title">AutoFinder</div>
+                <div class="brand-subtitle">Диагностика симптомов</div>
+            </div>
         </div>
-        <div class="header-actions">
-            <a class="btn-secondary" href="{{ url_for('diagnosis_reset') }}">Начать заново</a>
-            <a href="{{ url_for('index') }}">← Назад в каталог</a>
+        <div class="header-links">
+            <a class="ghost-btn" href="{{ url_for('diagnosis_reset') }}">Начать заново</a>
+            <a class="text-link" href="{{ url_for('index') }}">← Назад в каталог</a>
         </div>
     </div>
 </header>
 
 <main class="container">
     {% if diagnosis_failed %}
-        <section class="result-box">
+        <section class="card-surface result-panel">
+            <div class="eyebrow">Диагностика</div>
             <h1>Симптом не распознан</h1>
-            <p>
-                По фразе <strong>{{ user_text }}</strong> система не смогла уверенно определить симптом.
-                Это нормально для сырого MVP.
+            <p class="description">
+                По фразе <strong>{{ user_text }}</strong> система не смогла уверенно определить проблему.
+                Попробуй проще: “не заводится”, “гуляет руль”, “стук в подвеске”, “спускает колесо”.
             </p>
-            <p>
-                Попробуй формулировки проще: “не заводится”, “гуляет руль”, “стук в подвеске”,
-                “спускает колесо”, “греется двигатель”.
-            </p>
-            <div class="card-actions">
-                <a class="btn-secondary" href="{{ url_for('index') }}">Вернуться в каталог</a>
+            <div class="card-footer">
+                <a class="ghost-btn" href="{{ url_for('index') }}">Вернуться в каталог</a>
             </div>
         </section>
     {% endif %}
 
     {% if diagnosis_mode == "question" %}
-        <section class="result-box">
-            <div class="diagnostic-kicker">Диагностика</div>
+        <section class="card-surface result-panel">
+            <div class="eyebrow">Диагностика</div>
             <h1>{{ symptom['title'] }}</h1>
-            <p>Ответь на вопрос, чтобы сузить возможную причину.</p>
+            <p class="description">Ответь на вопрос, чтобы сузить круг причин.</p>
 
             <div class="question-box">
                 <h3>{{ question['text'] }}</h3>
@@ -56,7 +56,7 @@
                         </label>
                     {% endfor %}
 
-                    <div class="card-actions">
+                    <div class="actions-row">
                         <button type="submit">Дальше</button>
                     </div>
                 </form>
@@ -65,111 +65,98 @@
     {% endif %}
 
     {% if diagnosis_mode == "result" %}
-        <section class="result-box">
-            <div class="diagnostic-kicker">Результат диагностики</div>
-            <h1>{{ symptom['title'] }}</h1>
+        <section class="result-layout">
+            <div class="card-surface result-panel">
+                <div class="eyebrow">Результат диагностики</div>
+                <h1>{{ symptom['title'] }}</h1>
 
-            <div class="result-grid">
-                <div class="company-box">
-                    <h3>Что получилось</h3>
-
-                    <p><strong>Срочность:</strong> {{ urgency_label_text }}</p>
-
-                    {% if result['causes'] %}
-                        <p><strong>Наиболее вероятные причины:</strong></p>
-                        <ul class="result-list">
-                            {% for cause in result['causes'] %}
-                                <li>{{ cause }}</li>
-                            {% endfor %}
-                        </ul>
-                    {% endif %}
-
-                    {% if result['recommended_categories'] %}
-                        <p><strong>Рекомендуемые категории сервисов:</strong></p>
-                        <div class="card-badges">
-                            {% for cat in result['recommended_categories'] %}
-                                <span class="badge">{{ cat }}</span>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
+                <div class="meta-list">
+                    <div><strong>Срочность:</strong> {{ urgency_label_text }}</div>
                 </div>
 
-                <div class="company-box">
-                    <h3>Важно</h3>
-                    <p>
-                        Это не точная техдиагностика, а предварительный сценарий подбора.
-                        Он помогает сузить круг проблем, но не заменяет осмотр автомобиля.
-                    </p>
-                </div>
+                {% if result['causes'] %}
+                    <h3>Наиболее вероятные причины</h3>
+                    <ul class="result-list">
+                        {% for cause in result['causes'] %}
+                            <li>{{ cause }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+
+                {% if result['recommended_categories'] %}
+                    <h3>Рекомендуемые категории сервисов</h3>
+                    <div class="badges">
+                        {% for cat in result['recommended_categories'] %}
+                            <span class="badge">{{ cat }}</span>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="card-surface result-panel">
+                <div class="eyebrow">Важно</div>
+                <h2>Это не точная техдиагностика</h2>
+                <p class="description">
+                    Это предварительный движок подбора, а не финальный технический вывод.
+                    Он помогает сузить круг проблем и выбрать правильный тип сервиса.
+                </p>
             </div>
         </section>
 
         <section class="section-head">
-            <h2>Подходящие сервисы</h2>
+            <div>
+                <div class="eyebrow">Рекомендации</div>
+                <h2>Подходящие сервисы</h2>
+            </div>
             <div>{{ matched_companies|length }} найдено</div>
         </section>
 
-        <section class="cards">
+        <section class="cards-grid">
             {% if matched_companies %}
                 {% for company in matched_companies %}
-                    <article class="card">
-                        <div class="card-top">
-                            <div class="card-title-block">
+                    <article class="company-card card-surface">
+                        <div class="company-head">
+                            <div>
                                 <h3>
                                     <a href="{{ url_for('company_page', slug=company['slug']) }}">
                                         {{ company['name'] }}
                                     </a>
                                 </h3>
-
-                                <div class="card-badges">
-                                    <span class="badge">
-                                        {{ company['category'] or 'Без категории' }}
-                                    </span>
-
+                                <div class="badges">
+                                    <span class="badge">{{ company['category'] or 'Без категории' }}</span>
                                     {% if company['subcategory'] %}
-                                        <span class="badge badge-soft">
-                                            {{ company['subcategory'] }}
-                                        </span>
+                                        <span class="badge badge-soft">{{ company['subcategory'] }}</span>
                                     {% endif %}
                                 </div>
                             </div>
 
-                            <div class="rating-box">
-                                <div class="rating-value">★ {{ company['rating'] or 0 }}</div>
-                                <div class="rating-count">{{ company['reviews_count'] or 0 }} отзывов</div>
+                            <div class="rating-pill">
+                                <strong>★ {{ company['rating'] or 0 }}</strong>
+                                <span>{{ company['reviews_count'] or 0 }} отзывов</span>
                             </div>
                         </div>
 
-                        <p class="card-description">
-                            {{ company['description'] or 'Описание пока не заполнено.' }}
-                        </p>
+                        <p class="description">{{ company['description'] or 'Описание пока не заполнено.' }}</p>
 
                         <div class="meta-list">
-                            <div class="meta"><strong>Адрес:</strong> {{ company['address'] or 'Не указан' }}</div>
-                            <div class="meta"><strong>Район:</strong> {{ company['district'] or 'Не указан' }}</div>
-                            <div class="meta">
-                                <strong>Телефон:</strong>
-                                {% if company['phone'] %}
-                                    <a href="tel:{{ company['phone'] }}">{{ company['phone'] }}</a>
-                                {% else %}
-                                    Не указан
-                                {% endif %}
-                            </div>
+                            <div><strong>Город:</strong> {{ company['city_name'] or 'Не указан' }}</div>
+                            {% if company['metro_station'] %}
+                                <div><strong>Метро:</strong> {{ company['metro_station'] }}</div>
+                            {% endif %}
+                            <div><strong>Адрес:</strong> {{ company['address'] or 'Не указан' }}</div>
                         </div>
 
-                        <div class="card-actions">
-                            <a class="btn-secondary" href="{{ url_for('company_page', slug=company['slug']) }}">
-                                Подробнее
-                            </a>
+                        <div class="card-footer">
+                            <a class="ghost-btn" href="{{ url_for('company_page', slug=company['slug']) }}">Подробнее</a>
                             {% if company['phone'] %}
-                                <a class="btn-call" href="tel:{{ company['phone'] }}">Позвонить</a>
+                                <a class="call-btn" href="tel:{{ company['phone'] }}">Позвонить</a>
                             {% endif %}
                         </div>
                     </article>
                 {% endfor %}
             {% else %}
-                <div class="empty">
-                    Подходящих сервисов по этой категории пока не найдено.
+                <div class="empty card-surface">
+                    Подходящих сервисов пока не найдено.
                 </div>
             {% endif %}
         </section>
