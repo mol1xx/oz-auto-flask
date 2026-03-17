@@ -7,6 +7,9 @@ BASE_DIR = Path(__file__).resolve().parent
 DB_PATH = BASE_DIR / "database.db"
 CSV_PATH = BASE_DIR / "orekhovo_zuevo_auto_catalog.csv"
 
+DEFAULT_CITY_NAME = "Орехово-Зуево"
+DEFAULT_CITY_SLUG = "orekhovo-zuevo"
+
 
 def safe_str(value, default=""):
     if value is None:
@@ -64,6 +67,11 @@ def make_slug(text, fallback="company"):
     return slug or fallback
 
 
+def normalize_status_to_active(status):
+    status = safe_str(status).lower()
+    return 1 if status in ("active", "open", "yes", "1", "true") else 0
+
+
 def ensure_table(conn):
     conn.execute("""
         CREATE TABLE IF NOT EXISTS company (
@@ -72,7 +80,10 @@ def ensure_table(conn):
             slug TEXT NOT NULL UNIQUE,
             category TEXT,
             subcategory TEXT,
+            city_slug TEXT NOT NULL,
+            city_name TEXT NOT NULL,
             district TEXT,
+            metro_station TEXT,
             address TEXT,
             phone TEXT,
             website TEXT,
@@ -120,7 +131,11 @@ def import_csv(conn, csv_path):
             source_type = safe_str(row.get("source_type"))
             status = safe_str(row.get("status")).lower()
 
-            is_active = 1 if status in ("active", "open", "yes", "1", "true") else 0
+            city_name = safe_str(row.get("city"), DEFAULT_CITY_NAME) or DEFAULT_CITY_NAME
+            city_slug = safe_str(row.get("city_slug"), DEFAULT_CITY_SLUG) or make_slug(city_name, DEFAULT_CITY_SLUG)
+            metro_station = safe_str(row.get("metro_station"))
+
+            is_active = normalize_status_to_active(status)
 
             slug_base = make_slug(name)
             slug = slug_base
@@ -136,7 +151,10 @@ def import_csv(conn, csv_path):
                     slug,
                     category,
                     subcategory,
+                    city_slug,
+                    city_name,
                     district,
+                    metro_station,
                     address,
                     phone,
                     website,
@@ -147,13 +165,16 @@ def import_csv(conn, csv_path):
                     source_url,
                     source_type
                 )
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 name,
                 slug,
                 category,
                 subcategory,
+                city_slug,
+                city_name,
                 district,
+                metro_station,
                 address,
                 phone,
                 website,
